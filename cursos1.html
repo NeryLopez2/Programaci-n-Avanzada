@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Cursos</title>
+    <script src="tau-prolog.js"></script>
+    <script src="tau-prolog/modules/lists.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: #fff;
+            padding: 40px;
+            border-radius: 20px;
+            width: 420px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            font-size: 15px;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 15px;
+            background: #f1f5f9;
+            font-size: 16px;
+            line-height: 1.6;
+            font-weight: 500;
+            color: #2c3e50;
+            box-shadow: inset 0 3px 10px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Sistema de Gestión de Cursos</h1>
+     <!--Seleccionar alumno-->
+    <div class="form-group">
+        <label for="alumno">Selecciona un alumno</label>
+        <select id="alumno">
+            <option value="nery">Nery</option>
+            <option value="melanie">Melanie</option>
+            <option value="paola">Paola</option>
+            <option value="juan">Juan</option>
+        </select>
+    </div>
+    <!--Seleccionar materia-->
+    <div class="form-group">
+        <label for="curso">Selecciona un curso</label>
+        <select id="curso">
+            <option value="calculo_diferencial">Cálculo Diferencial</option>
+            <option value="calculo_integral">Cálculo Integral</option>
+            <option value="programacion1">Programación 1</option>
+            <option value="programacion2">Programación 2</option>
+            <option value="algoritmos">Algoritmos</option>
+            <option value="fisica1">Física 1</option>
+            <option value="ingles1">Inglés 1</option>
+            <option value="ingles2">Inglés 2</option>
+            <option value="emprendedores">Emprendedores</option>
+            <option value="laboratorio_de_interfaces">Laboratorio de Interfaces</option>
+            <option value="implantacion_y_capacitacion">Implantación y Capacitación</option>
+            <option value="modelado_3D">Modelado 3D</option>
+        </select>
+    </div>
+     <!--Consulta-->
+    <button onclick="consulta()">¿Puede cursar?</button>
+     <!--Respuesta de la consulta-->
+    <div id="resultado" class="result"></div>
+</div>
+ <!--Base de Conocimiento-Prolog-->
+<script>
+    const prologCode = `
+        % --- Materias ---
+        materia(calculo_diferencial).
+        materia(calculo_integral).
+        materia(programacion1).
+        materia(programacion2).
+        materia(algoritmos).
+        materia(fisica1).
+        materia(ingles1).
+        materia(ingles2).
+        materia(emprendedores).
+        materia(laboratorio_de_interfaces).
+        materia(implantacion_y_capacitacion).
+        materia(modelado_3D).
+
+        % --- Cursos aprobados ---
+        aprobada(nery, calculo_diferencial).
+        aprobada(nery, programacion1).
+        aprobada(nery, emprendedores).
+        aprobada(nery, laboratorio_de_interfaces).
+
+        aprobada(juan, calculo_diferencial).
+
+        aprobada(paola, programacion1).
+        aprobada(paola, ingles1).
+        aprobada(paola, fisica1).
+        aprobada(paola, algoritmos).
+        aprobada(paola, calculo_diferencial).
+
+        aprobada(melanie, calculo_diferencial).
+        aprobada(melanie, ingles1).
+        aprobada(melanie, implantacion_y_capacitacion).
+        aprobada(melanie, modelado_3D).
+
+        % --- Estados de los cursos ---
+        estado_curso(Alumno, Curso, ya_aprobado) :-
+            aprobada(Alumno, Curso).
+
+        estado_curso(Alumno, Curso, puede_cursar) :-
+            materia(Curso),
+            \\+ aprobada(Alumno, Curso).
+    `;
+
+    const session = pl.create();
+    session.consult(prologCode);
+
+    function consulta(){
+        const alumno = document.getElementById("alumno").value;
+        const curso = document.getElementById("curso").value;
+        const query = `estado_curso(${alumno}, ${curso}, Estado).`;
+        
+        session.query(query);
+        session.answer(answer => {
+            if (pl.type.is_substitution(answer)){
+                const estado = answer.lookup("Estado").id;
+                if (estado === "ya_aprobado") {
+                    document.getElementById("resultado").innerHTML = 
+                        `<b>${alumno}</b> ya aprobó <b>${curso.replaceAll("_"," ")}</b>, no puede volver a cursarlo.`;
+                } else if (estado === "puede_cursar") {
+                    document.getElementById("resultado").innerHTML = 
+                        `<b>${alumno}</b> SÍ puede cursar <b>${curso.replaceAll("_"," ")}</b>.`;
+                }
+            } else {
+                document.getElementById("resultado").innerHTML = "No se encontró información.";
+            }
+        });
+    }
+</script>
+</body>
+</html>
